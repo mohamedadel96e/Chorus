@@ -1,0 +1,59 @@
+# Java / Maven
+target/
+*.class
+*.jar
+*.war
+*.nar
+*.ear
+*.log
+*.sh
+hs_err_pid*
+.mvn/
+
+# Node.js / NestJS
+node_modules/
+dist/
+npm-debug.log
+yarn-error.log
+.pnp
+.pnp.js
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# PHP / Laravel
+/vendor/
+/public/build/
+/public/hot
+/public/storage
+/storage/*.key
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/views/*
+/storage/framework/testing/*
+/storage/logs/*
+*.sqlite
+*.sqlite3
+.env
+.phpunit.result.cache
+Homestead.json
+Homestead.yaml
+auth.json
+npm-debug.log
+yarn-error.log
+/.fleet
+/.idea
+/.vscode
+
+# IDEs & OS
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-compose.override.yml
+.env
