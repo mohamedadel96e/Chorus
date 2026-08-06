@@ -8,6 +8,7 @@ import { OutboxEvent } from './outbox/outbox-event.entity';
 import { ProcessedEvent } from './outbox/processed-event.entity';
 import { PaymentModule } from './payment/payment.module';
 import { PaymentRecord } from './payment/payment-record.entity';
+import { ConsumerModule } from './consumer/consumer.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { PaymentRecord } from './payment/payment-record.entity';
     ScheduleModule.forRoot(),
     OutboxModule,
     PaymentModule,
+    ConsumerModule,
   ],
   controllers: [AppController],
   providers: [AppService],
