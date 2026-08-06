@@ -40,7 +40,9 @@ class RelayOutboxCommand extends Command
 
         try {
             // In a real app, use config() for these credentials
-            $connection = new AMQPStreamConnection('localhost', 5672, 'guest', 'guest');
+            $connection = app()->bound(AMQPStreamConnection::class) 
+                ? app(AMQPStreamConnection::class)
+                : new AMQPStreamConnection('localhost', 5672, 'guest', 'guest');
             $channel = $connection->channel();
 
             $exchange = 'chorus.events';

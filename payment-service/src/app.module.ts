@@ -6,6 +6,8 @@ import { AppService } from './app.service';
 import { OutboxModule } from './outbox/outbox.module';
 import { OutboxEvent } from './outbox/outbox-event.entity';
 import { ProcessedEvent } from './outbox/processed-event.entity';
+import { PaymentModule } from './payment/payment.module';
+import { PaymentRecord } from './payment/payment-record.entity';
 
 @Module({
   imports: [
@@ -16,11 +18,12 @@ import { ProcessedEvent } from './outbox/processed-event.entity';
       username: 'postgres',
       password: 'password',
       database: 'payment_db',
-      entities: [OutboxEvent, ProcessedEvent],
+      entities: [OutboxEvent, ProcessedEvent, PaymentRecord],
       synchronize: true, // Use only in development
     }),
     ScheduleModule.forRoot(),
     OutboxModule,
+    PaymentModule,
   ],
   controllers: [AppController],
   providers: [AppService],
