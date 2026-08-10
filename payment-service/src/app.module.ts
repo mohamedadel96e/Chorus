@@ -9,6 +9,7 @@ import { ProcessedEvent } from './outbox/processed-event.entity';
 import { PaymentModule } from './payment/payment.module';
 import { PaymentRecord } from './payment/payment-record.entity';
 import { ConsumerModule } from './consumer/consumer.module';
+import { TestModule } from './test/test.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { ConsumerModule } from './consumer/consumer.module';
     OutboxModule,
     PaymentModule,
     ConsumerModule,
+    TestModule,
   ],
   controllers: [AppController],
   providers: [AppService],

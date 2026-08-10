@@ -11,6 +11,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Date;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.JsonNode;
 
 @Component
 public class OutboxRelay {
@@ -18,7 +22,8 @@ public class OutboxRelay {
     private static final Logger log = LoggerFactory.getLogger(OutboxRelay.class);
     private final OutboxEventRepository repository;
     private final RabbitTemplate rabbitTemplate;
-    
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
     private static final String EXCHANGE_NAME = "chorus.events";
 
     public OutboxRelay(OutboxEventRepository repository, RabbitTemplate rabbitTemplate) {
@@ -43,20 +48,33 @@ public class OutboxRelay {
                 props.setMessageId(event.getId().toString());
                 props.setCorrelationId(event.getCorrelationId().toString());
                 // For completeness, we can set the timestamp as well
-                props.setTimestamp(java.util.Date.from(event.getOccurredAt()));
+                props.setTimestamp(Date.from(event.getOccurredAt()));
 
-                Message message = new Message(event.getPayload().getBytes(StandardCharsets.UTF_8), props);
+                ObjectNode envelope = objectMapper.createObjectNode();
+                envelope.put("event_id", event.getId().toString());
+                envelope.put("event_type", event.getEventType());
+                envelope.put("event_version", 1);
+                envelope.put("correlation_id", event.getCorrelationId().toString());
+                envelope.put("occurred_at", event.getOccurredAt().toString() + "Z"); // approximate ISO if Instant
+
+                JsonNode payloadNode = objectMapper.readTree(event.getPayload());
+                envelope.set("payload", payloadNode);
+
+                String envelopeJson = objectMapper.writeValueAsString(envelope);
+
+                Message message = new Message(envelopeJson.getBytes(StandardCharsets.UTF_8), props);
 
                 rabbitTemplate.send(EXCHANGE_NAME, event.getRoutingKey(), message);
 
                 event.setStatus("PUBLISHED");
                 repository.save(event);
-                
+
                 log.info("Successfully published event {} with routing key {}", event.getId(), event.getRoutingKey());
             } catch (Exception e) {
                 log.error("Failed to publish event {}", event.getId(), e);
                 // We do not throw here to allow other independent events to be processed.
-                // Since this is in a transactional method, if we don't throw, the successfully published
+                // Since this is in a transactional method, if we don't throw, the successfully
+                // published
                 // events WILL have their status updated to PUBLISHED in the DB.
             }
         }

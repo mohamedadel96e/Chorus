@@ -34,7 +34,8 @@ public class Order {
     protected Order() {
     }
 
-    public Order(UUID id, String customerId, Integer totalAmountCents, String currency, String status, Instant createdAt) {
+    public Order(UUID id, String customerId, Integer totalAmountCents, String currency, String status,
+            Instant createdAt) {
         this.id = id;
         this.customerId = customerId;
         this.totalAmountCents = totalAmountCents;
@@ -48,13 +49,39 @@ public class Order {
         item.setOrder(this);
     }
 
-    public UUID getId() { return id; }
-    public String getCustomerId() { return customerId; }
-    public Integer getTotalAmountCents() { return totalAmountCents; }
-    public void setTotalAmountCents(Integer totalAmountCents) { this.totalAmountCents = totalAmountCents; }
-    public String getCurrency() { return currency; }
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
-    public Instant getCreatedAt() { return createdAt; }
-    public List<OrderItem> getItems() { return items; }
+    public UUID getId() {
+        return id;
+    }
+
+    public String getCustomerId() {
+        return customerId;
+    }
+
+    public Integer getTotalAmountCents() {
+        return totalAmountCents;
+    }
+
+    public void setTotalAmountCents(Integer totalAmountCents) {
+        this.totalAmountCents = totalAmountCents;
+    }
+
+    public String getCurrency() {
+        return currency;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    public List<OrderItem> getItems() {
+        return items;
+    }
 }

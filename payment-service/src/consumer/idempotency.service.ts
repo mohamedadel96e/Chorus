@@ -27,9 +27,12 @@ export class IdempotencyService {
 
       await queryRunner.commitTransaction();
     } catch (error) {
-      if (error.code === '23505') { // Postgres unique constraint violation
+      if (error.code === '23505') {
+        // Postgres unique constraint violation
         await queryRunner.rollbackTransaction();
-        this.logger.warn(`Duplicate event detected: ${eventId}. Skipping execution to maintain idempotency.`);
+        this.logger.warn(
+          `Duplicate event detected: ${eventId}. Skipping execution to maintain idempotency.`,
+        );
         return;
       }
 

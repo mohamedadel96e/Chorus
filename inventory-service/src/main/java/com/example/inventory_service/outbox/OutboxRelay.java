@@ -18,7 +18,8 @@ public class OutboxRelay {
     private static final Logger log = LoggerFactory.getLogger(OutboxRelay.class);
     private final OutboxEventRepository repository;
     private final RabbitTemplate rabbitTemplate;
-    
+    private final com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
+
     private static final String EXCHANGE_NAME = "chorus.events";
 
     public OutboxRelay(OutboxEventRepository repository, RabbitTemplate rabbitTemplate) {
@@ -44,13 +45,25 @@ public class OutboxRelay {
                 props.setCorrelationId(event.getCorrelationId().toString());
                 props.setTimestamp(java.util.Date.from(event.getOccurredAt()));
 
-                Message message = new Message(event.getPayload().getBytes(StandardCharsets.UTF_8), props);
+                com.fasterxml.jackson.databind.node.ObjectNode envelope = objectMapper.createObjectNode();
+                envelope.put("event_id", event.getId().toString());
+                envelope.put("event_type", event.getEventType());
+                envelope.put("event_version", 1);
+                envelope.put("correlation_id", event.getCorrelationId().toString());
+                envelope.put("occurred_at", event.getOccurredAt().toString() + "Z");
+
+                com.fasterxml.jackson.databind.JsonNode payloadNode = objectMapper.readTree(event.getPayload());
+                envelope.set("payload", payloadNode);
+
+                String envelopeJson = objectMapper.writeValueAsString(envelope);
+
+                Message message = new Message(envelopeJson.getBytes(StandardCharsets.UTF_8), props);
 
                 rabbitTemplate.send(EXCHANGE_NAME, event.getRoutingKey(), message);
 
                 event.setStatus("PUBLISHED");
                 repository.save(event);
-                
+
                 log.info("Successfully published event {} with routing key {}", event.getId(), event.getRoutingKey());
             } catch (Exception e) {
                 log.error("Failed to publish event {}", event.getId(), e);

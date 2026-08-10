@@ -16,6 +16,7 @@ return new class extends Migration
             $table->uuid('order_id');
             $table->string('address');
             $table->string('status');
+            $table->string('tracking_number');
             $table->timestamps();
         });
     }

@@ -3,8 +3,8 @@
 namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 use Illuminate\Support\Str;
+use Tests\TestCase;
 
 class ShippingControllerTest extends TestCase
 {
@@ -21,9 +21,9 @@ class ShippingControllerTest extends TestCase
         $response = $this->postJson('/api/shipping/schedule', $payload);
 
         $response->assertStatus(201)
-                 ->assertJsonPath('status', 'SCHEDULED')
-                 ->assertJsonStructure(['shipment_id', 'status', 'message']);
-        
+            ->assertJsonPath('status', 'SCHEDULED')
+            ->assertJsonStructure(['shipment_id', 'status', 'message']);
+
         $this->assertDatabaseHas('shipments', [
             'order_id' => $orderId,
             'status' => 'SCHEDULED',

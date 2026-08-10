@@ -2,12 +2,10 @@
 
 namespace Tests\Unit;
 
-use Tests\TestCase;
 use App\Services\ShippingService;
-use App\Models\Shipment;
-use App\Models\OutboxEvent;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
+use Tests\TestCase;
 
 class ShippingServiceTest extends TestCase
 {
@@ -15,7 +13,7 @@ class ShippingServiceTest extends TestCase
 
     public function test_schedule_creates_shipment_and_outbox_event()
     {
-        $service = new ShippingService();
+        $service = new ShippingService;
         $orderId = (string) Str::uuid();
         $address = '123 Test St';
 

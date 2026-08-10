@@ -14,5 +14,6 @@ class Shipment extends Model
         'order_id',
         'address',
         'status',
+        'tracking_number',
     ];
 }

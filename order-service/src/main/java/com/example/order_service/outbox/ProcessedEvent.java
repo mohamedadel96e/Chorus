@@ -19,15 +19,27 @@ public class ProcessedEvent {
     @Column(name = "processed_at", nullable = false)
     private Instant processedAt;
 
-    public ProcessedEvent() {}
+    public ProcessedEvent() {
+    }
 
     public ProcessedEvent(UUID eventId, Instant processedAt) {
         this.eventId = eventId;
         this.processedAt = processedAt;
     }
 
-    public UUID getEventId() { return eventId; }
-    public void setEventId(UUID eventId) { this.eventId = eventId; }
-    public Instant getProcessedAt() { return processedAt; }
-    public void setProcessedAt(Instant processedAt) { this.processedAt = processedAt; }
+    public UUID getEventId() {
+        return eventId;
+    }
+
+    public void setEventId(UUID eventId) {
+        this.eventId = eventId;
+    }
+
+    public Instant getProcessedAt() {
+        return processedAt;
+    }
+
+    public void setProcessedAt(Instant processedAt) {
+        this.processedAt = processedAt;
+    }
 }

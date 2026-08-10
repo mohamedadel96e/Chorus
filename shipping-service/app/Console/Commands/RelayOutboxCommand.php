@@ -2,8 +2,8 @@
 
 namespace App\Console\Commands;
 
-use Illuminate\Console\Command;
 use App\Models\OutboxEvent;
+use Illuminate\Console\Command;
 use PhpAmqpLib\Connection\AMQPStreamConnection;
 use PhpAmqpLib\Message\AMQPMessage;
 
@@ -40,7 +40,7 @@ class RelayOutboxCommand extends Command
 
         try {
             // In a real app, use config() for these credentials
-            $connection = app()->bound(AMQPStreamConnection::class) 
+            $connection = app()->bound(AMQPStreamConnection::class)
                 ? app(AMQPStreamConnection::class)
                 : new AMQPStreamConnection('localhost', 5672, 'guest', 'guest');
             $channel = $connection->channel();
@@ -50,7 +50,15 @@ class RelayOutboxCommand extends Command
 
             foreach ($pendingEvents as $event) {
                 try {
-                    $payloadStr = json_encode($event->payload);
+                    $envelope = [
+                        'event_id' => $event->id,
+                        'event_type' => $event->event_type,
+                        'event_version' => 1,
+                        'correlation_id' => $event->correlation_id,
+                        'occurred_at' => $event->occurred_at->toIso8601String(),
+                        'payload' => $event->payload,
+                    ];
+                    $payloadStr = json_encode($envelope);
 
                     $msg = new AMQPMessage($payloadStr, [
                         'content_type' => 'application/json',
@@ -67,7 +75,7 @@ class RelayOutboxCommand extends Command
 
                     $this->info("Successfully published event {$event->id} with routing key {$event->routing_key}");
                 } catch (\Exception $e) {
-                    $this->error("Failed to publish event {$event->id}: " . $e->getMessage());
+                    $this->error("Failed to publish event {$event->id}: ".$e->getMessage());
                 }
             }
 
@@ -75,7 +83,7 @@ class RelayOutboxCommand extends Command
             $connection->close();
 
         } catch (\Exception $e) {
-            $this->error("Failed to connect to RabbitMQ: " . $e->getMessage());
+            $this->error('Failed to connect to RabbitMQ: '.$e->getMessage());
         }
     }
 }

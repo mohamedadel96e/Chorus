@@ -12,10 +12,6 @@ trait HandlesIdempotentEvents
     /**
      * Executes the given callback idempotently by ensuring the event ID
      * has not been processed yet.
-     *
-     * @param string $eventId
-     * @param callable $callback
-     * @return void
      */
     protected function handleIdempotentEvent(string $eventId, callable $callback): void
     {
@@ -23,7 +19,7 @@ trait HandlesIdempotentEvents
             DB::transaction(function () use ($eventId, $callback) {
                 ProcessedEvent::insert([
                     'event_id' => $eventId,
-                    'processed_at' => now()
+                    'processed_at' => now(),
                 ]);
 
                 $callback();
@@ -31,6 +27,7 @@ trait HandlesIdempotentEvents
         } catch (QueryException $e) {
             if ($e->errorInfo[0] === '23505' || str_contains($e->getMessage(), 'duplicate key')) {
                 Log::warning("Duplicate event detected: {$eventId}. Skipping execution to maintain idempotency.");
+
                 return;
             }
             throw $e;

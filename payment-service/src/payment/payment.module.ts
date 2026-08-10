@@ -9,5 +9,6 @@ import { OutboxEvent } from '../outbox/outbox-event.entity';
   imports: [TypeOrmModule.forFeature([PaymentRecord, OutboxEvent])],
   providers: [PaymentService],
   controllers: [PaymentController],
+  exports: [PaymentService],
 })
 export class PaymentModule {}

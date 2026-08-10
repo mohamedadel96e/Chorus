@@ -40,7 +40,7 @@ describe('PaymentController', () => {
 
     const response = await controller.charge(request);
 
-    expect(service.charge).toHaveBeenCalledWith(request);
+    expect(service.processCharge).toHaveBeenCalledWith(request);
     expect(response).toEqual({
       paymentId: 'payment-id-123',
       status: 'SUCCESS',

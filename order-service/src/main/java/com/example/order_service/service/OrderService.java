@@ -17,6 +17,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.Map;
 
 @Service
 public class OrderService {
@@ -25,7 +26,8 @@ public class OrderService {
     private final OutboxEventRepository outboxEventRepository;
     private final ObjectMapper objectMapper;
 
-    public OrderService(OrderRepository orderRepository, OutboxEventRepository outboxEventRepository, ObjectMapper objectMapper) {
+    public OrderService(OrderRepository orderRepository, OutboxEventRepository outboxEventRepository,
+            ObjectMapper objectMapper) {
         this.orderRepository = orderRepository;
         this.outboxEventRepository = outboxEventRepository;
         this.objectMapper = objectMapper;
@@ -56,7 +58,8 @@ public class OrderService {
             int lineTotal = itemReq.getQuantity() * itemReq.getUnitPriceCents();
             totalCents += lineTotal;
 
-            OrderItem orderItem = new OrderItem(UUID.randomUUID(), itemReq.getProductId(), itemReq.getQuantity(), itemReq.getUnitPriceCents());
+            OrderItem orderItem = new OrderItem(UUID.randomUUID(), itemReq.getProductId(), itemReq.getQuantity(),
+                    itemReq.getUnitPriceCents());
             order.addItem(orderItem);
 
             OrderCreatedPayload.Item payloadItem = new OrderCreatedPayload.Item();
@@ -85,13 +88,38 @@ public class OrderService {
                     orderId,
                     payloadJson,
                     Instant.now(),
-                    "PENDING"
-            );
+                    "PENDING");
             outboxEventRepository.save(event);
         } catch (JacksonException e) {
             throw new RuntimeException("Failed to serialize event payload", e);
         }
 
         return order;
+    }
+
+    @Transactional
+    public void updateOrderStatus(UUID orderId, String status) {
+        Order order = orderRepository.findById(orderId).orElse(null);
+        if (order != null) {
+            order.setStatus(status);
+            orderRepository.save(order);
+
+            if ("COMPLETED".equals(status)) {
+                try {
+                    String payloadJson = objectMapper.writeValueAsString(Map.of("order_id", orderId.toString()));
+                    OutboxEvent event = new OutboxEvent(
+                            UUID.randomUUID(),
+                            "OrderCompleted",
+                            "order.completed",
+                            orderId, // This is the originating orderId, so it is the correlationId
+                            payloadJson,
+                            Instant.now(),
+                            "PENDING");
+                    outboxEventRepository.save(event);
+                } catch (JacksonException e) {
+                    throw new RuntimeException("Failed to serialize OrderCompleted payload", e);
+                }
+            }
+        }
     }
 }
