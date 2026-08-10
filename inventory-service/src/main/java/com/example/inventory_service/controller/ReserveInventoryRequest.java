@@ -4,43 +4,43 @@ import java.util.List;
 import java.util.UUID;
 
 public class ReserveInventoryRequest {
-    private UUID orderId;
-    private List<Item> items;
+  private UUID orderId;
+  private List<Item> items;
 
-    public UUID getOrderId() {
-        return orderId;
+  public UUID getOrderId() {
+    return orderId;
+  }
+
+  public void setOrderId(UUID orderId) {
+    this.orderId = orderId;
+  }
+
+  public List<Item> getItems() {
+    return items;
+  }
+
+  public void setItems(List<Item> items) {
+    this.items = items;
+  }
+
+  public static class Item {
+    private String productId;
+    private int quantity;
+
+    public String getProductId() {
+      return productId;
     }
 
-    public void setOrderId(UUID orderId) {
-        this.orderId = orderId;
+    public void setProductId(String productId) {
+      this.productId = productId;
     }
 
-    public List<Item> getItems() {
-        return items;
+    public int getQuantity() {
+      return quantity;
     }
 
-    public void setItems(List<Item> items) {
-        this.items = items;
+    public void setQuantity(int quantity) {
+      this.quantity = quantity;
     }
-
-    public static class Item {
-        private String productId;
-        private int quantity;
-
-        public String getProductId() {
-            return productId;
-        }
-
-        public void setProductId(String productId) {
-            this.productId = productId;
-        }
-
-        public int getQuantity() {
-            return quantity;
-        }
-
-        public void setQuantity(int quantity) {
-            this.quantity = quantity;
-        }
-    }
+  }
 }

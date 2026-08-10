@@ -7,35 +7,32 @@ import jakarta.persistence.Table;
 @Entity
 @Table(name = "products")
 public class Product {
-    @Id
-    private String productId;
+  @Id private String productId;
 
-    private int availableQuantity;
+  private int availableQuantity;
 
-    @jakarta.persistence.Version
-    private Long version;
+  @jakarta.persistence.Version private Long version;
 
-    public Product() {
-    }
+  public Product() {}
 
-    public Product(String productId, int availableQuantity) {
-        this.productId = productId;
-        this.availableQuantity = availableQuantity;
-    }
+  public Product(String productId, int availableQuantity) {
+    this.productId = productId;
+    this.availableQuantity = availableQuantity;
+  }
 
-    public String getProductId() {
-        return productId;
-    }
+  public String getProductId() {
+    return productId;
+  }
 
-    public void setProductId(String productId) {
-        this.productId = productId;
-    }
+  public void setProductId(String productId) {
+    this.productId = productId;
+  }
 
-    public int getAvailableQuantity() {
-        return availableQuantity;
-    }
+  public int getAvailableQuantity() {
+    return availableQuantity;
+  }
 
-    public void setAvailableQuantity(int availableQuantity) {
-        this.availableQuantity = availableQuantity;
-    }
+  public void setAvailableQuantity(int availableQuantity) {
+    this.availableQuantity = availableQuantity;
+  }
 }
