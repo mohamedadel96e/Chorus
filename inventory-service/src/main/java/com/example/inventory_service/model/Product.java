@@ -9,10 +9,14 @@ import jakarta.persistence.Table;
 public class Product {
     @Id
     private String productId;
-    
+
     private int availableQuantity;
 
-    public Product() {}
+    @jakarta.persistence.Version
+    private Long version;
+
+    public Product() {
+    }
 
     public Product(String productId, int availableQuantity) {
         this.productId = productId;

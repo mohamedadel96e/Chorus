@@ -11,14 +11,15 @@ import java.util.UUID;
 public class Reservation {
     @Id
     private UUID id;
-    
+
     private UUID orderId;
-    
+
     private String status; // PENDING, CONFIRMED, CANCELLED
-    
+
     private Instant reservedAt;
 
-    public Reservation() {}
+    public Reservation() {
+    }
 
     public Reservation(UUID id, UUID orderId, String status, Instant reservedAt) {
         this.id = id;

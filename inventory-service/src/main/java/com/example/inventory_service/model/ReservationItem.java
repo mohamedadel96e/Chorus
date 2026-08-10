@@ -11,15 +11,16 @@ import java.util.UUID;
 public class ReservationItem {
     @Id
     private UUID id;
-    
+
     @Column(name = "reservation_id")
     private UUID reservationId;
-    
+
     private String productId;
-    
+
     private int quantity;
 
-    public ReservationItem() {}
+    public ReservationItem() {
+    }
 
     public ReservationItem(UUID id, UUID reservationId, String productId, int quantity) {
         this.id = id;
