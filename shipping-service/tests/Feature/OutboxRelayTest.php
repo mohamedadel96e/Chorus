@@ -2,14 +2,14 @@
 
 namespace Tests\Feature;
 
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
-use PhpAmqpLib\Connection\AMQPStreamConnection;
-use PhpAmqpLib\Channel\AMQPChannel;
-use Tests\TestCase;
-use Mockery;
-use Carbon\Carbon;
 use Illuminate\Support\Str;
+use Mockery;
+use PhpAmqpLib\Channel\AMQPChannel;
+use PhpAmqpLib\Connection\AMQPStreamConnection;
+use Tests\TestCase;
 
 class OutboxRelayTest extends TestCase
 {
@@ -18,7 +18,7 @@ class OutboxRelayTest extends TestCase
     public function test_it_relays_pending_events()
     {
         $id = (string) Str::uuid();
-        
+
         DB::table('outbox_events')->insert([
             'id' => $id,
             'correlation_id' => (string) Str::uuid(),

@@ -2,41 +2,44 @@
 
 namespace App\Services;
 
-use App\Models\Shipment;
 use App\Models\OutboxEvent;
+use App\Models\Shipment;
 use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class ShippingService
 {
-    public function schedule(string $orderId, string $address): array
+    public function createShipment(array $payload, string $correlationId): void
     {
-        return DB::transaction(function () use ($orderId, $address) {
+        $orderId = $payload['order_id'];
+
+        DB::transaction(function () use ($orderId, $correlationId) {
+            $trackingNumber = 'TRK-'.strtoupper(substr(md5($orderId), 0, 8));
+
             $shipment = Shipment::create([
                 'order_id' => $orderId,
-                'address' => $address,
-                'status' => 'SCHEDULED',
+                'address' => '123 Mock Address',
+                'status' => 'CREATED',
+                'tracking_number' => $trackingNumber,
             ]);
 
             OutboxEvent::create([
-                'id' => (string) \Illuminate\Support\Str::uuid(),
-                'correlation_id' => $orderId,
-                'event_type' => 'ShippingScheduled',
-                'routing_key' => 'shipping.scheduled',
+                'id' => (string) Str::uuid(),
+                'event_type' => 'ShipmentCreated',
+                'routing_key' => 'shipment.created',
+                'correlation_id' => $correlationId,
                 'payload' => [
-                    'shipment_id' => $shipment->id,
                     'order_id' => $orderId,
-                    'status' => 'SCHEDULED',
+                    'shipment_id' => "ship-{$shipment->id}",
+                    'tracking_number' => $trackingNumber,
+                    'estimated_delivery' => date('Y-m-d', strtotime('+3 days')),
                 ],
-                'occurred_at' => Carbon::now(),
                 'status' => 'PENDING',
+                'occurred_at' => now(),
             ]);
 
-            return [
-                'shipment_id' => $shipment->id,
-                'status' => $shipment->status,
-                'message' => 'Shipment scheduled successfully',
-            ];
+            Log::info("Shipment created for order {$orderId} with tracking {$trackingNumber}");
         });
     }
 }

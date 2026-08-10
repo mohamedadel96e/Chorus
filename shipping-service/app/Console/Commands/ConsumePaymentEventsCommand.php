@@ -2,17 +2,19 @@
 
 namespace App\Console\Commands;
 
+use App\Services\ShippingService;
+use App\Traits\HandlesIdempotentEvents;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Log;
 use PhpAmqpLib\Connection\AMQPStreamConnection;
 use PhpAmqpLib\Message\AMQPMessage;
-use App\Traits\HandlesIdempotentEvents;
-use Illuminate\Support\Facades\Log;
 
 class ConsumePaymentEventsCommand extends Command
 {
     use HandlesIdempotentEvents;
 
     protected $signature = 'rabbitmq:consume-payment-events';
+
     protected $description = 'Consume payment events and execute business logic idempotently';
 
     public function handle()
@@ -27,10 +29,10 @@ class ConsumePaymentEventsCommand extends Command
         $channel->exchange_declare($exchange, 'topic', false, true, false);
         $channel->queue_declare($queue, false, true, false, false);
         $channel->queue_bind($queue, $exchange, $routingKey);
-        
+
         $channel->basic_qos(null, 1, null);
 
-        $this->info("Listening for payment.charged events...");
+        $this->info('Listening for payment.charged events...');
 
         $callback = function (AMQPMessage $msg) {
             try {
@@ -38,23 +40,26 @@ class ConsumePaymentEventsCommand extends Command
                 $eventId = $payload['event_id'] ?? null;
                 $correlationId = $payload['correlation_id'] ?? null;
 
-                if (!$eventId) {
-                    $this->error("Received message without event_id: " . $msg->body);
+                if (! $eventId) {
+                    $this->error('Received message without event_id: '.$msg->body);
                     $msg->ack();
+
                     return;
                 }
 
                 $this->info("Received payment.charged event [event_id: {$eventId}, correlation_id: {$correlationId}]");
 
-                $this->handleIdempotentEvent($eventId, function () use ($correlationId) {
-                    // Dummy business logic for Phase 3
+                $this->handleIdempotentEvent($eventId, function () use ($payload, $correlationId) {
+                    $shippingService = app(ShippingService::class);
+                    $innerPayload = $payload['payload'] ?? [];
+                    $shippingService->createShipment($innerPayload, $correlationId);
                     Log::info("Processing business logic for payment.charged (Correlation: {$correlationId})");
-                    $this->info("Processed successfully.");
+                    $this->info('Processed successfully.');
                 });
 
                 $msg->ack();
             } catch (\Exception $e) {
-                $this->error("Error processing message: " . $e->getMessage());
+                $this->error('Error processing message: '.$e->getMessage());
                 $msg->nack(true);
             }
         };
