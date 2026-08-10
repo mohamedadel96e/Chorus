@@ -1,6 +1,7 @@
 import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
 import * as amqplib from 'amqplib';
 import { IdempotencyService } from './idempotency.service';
+import { PaymentService } from '../payment/payment.service';
 
 @Injectable()
 export class RabbitMqConsumerService implements OnModuleInit, OnModuleDestroy {
@@ -8,7 +9,10 @@ export class RabbitMqConsumerService implements OnModuleInit, OnModuleDestroy {
   private connection: any;
   private channel: any;
 
-  constructor(private readonly idempotencyService: IdempotencyService) {}
+  constructor(
+    private readonly idempotencyService: IdempotencyService,
+    private readonly paymentService: PaymentService,
+  ) {}
 
   async onModuleInit() {
     await this.connect();
@@ -18,46 +22,80 @@ export class RabbitMqConsumerService implements OnModuleInit, OnModuleDestroy {
     try {
       this.connection = await amqplib.connect('amqp://guest:guest@localhost:5672');
       this.channel = await this.connection.createChannel();
-      
+
       const exchange = 'chorus.events';
-      const queue = 'payment.inventory.reserved';
-      const routingKey = 'inventory.reserved';
+
+      // We will assert and bind two queues
+      const reservedQueue = 'payment.inventory.reserved';
+      const reservedKey = 'inventory.reserved';
+
+      const shipmentFailedQueue = 'payment.shipment.failed';
+      const shipmentFailedKey = 'shipment.failed';
 
       await this.channel.assertExchange(exchange, 'topic', { durable: true });
-      await this.channel.assertQueue(queue, { durable: true });
-      await this.channel.bindQueue(queue, exchange, routingKey);
 
-      // Preheat count to 1 for fair dispatch and explicit manual ack
+      await this.channel.assertQueue(reservedQueue, { durable: true });
+      await this.channel.bindQueue(reservedQueue, exchange, reservedKey);
+
+      await this.channel.assertQueue(shipmentFailedQueue, { durable: true });
+      await this.channel.bindQueue(shipmentFailedQueue, exchange, shipmentFailedKey);
+
       await this.channel.prefetch(1);
 
-      this.logger.log(`Listening on queue ${queue} for routing key ${routingKey}`);
+      this.logger.log(`Listening on queues: ${reservedQueue}, ${shipmentFailedQueue}`);
 
-      this.channel.consume(queue, async (msg) => {
-        if (!msg) return;
-
-        try {
-          const content = JSON.parse(msg.content.toString());
-          const eventId = content.event_id;
-          const correlationId = content.correlation_id;
-
-          this.logger.log(`Received inventory.reserved event [event_id: ${eventId}, correlation_id: ${correlationId}]`);
-
-          await this.idempotencyService.executeIdempotent(eventId, async (manager) => {
-            // Dummy business logic for Phase 3
-            this.logger.log(`Processing business logic for inventory.reserved (Correlation: ${correlationId})`);
+      // Consumer for inventory.reserved
+      this.channel.consume(
+        reservedQueue,
+        async (msg) => {
+          if (!msg) return;
+          await this.handleMessage(msg, async (envelope) => {
+            const payload = envelope.payload;
+            const correlationId = envelope.correlation_id;
+            this.logger.log(
+              `Processing charge for order: ${payload.order_id} (Correlation: ${correlationId})`,
+            );
+            await this.paymentService.processCharge(payload, correlationId);
           });
+        },
+        { noAck: false },
+      );
 
-          this.channel.ack(msg);
-        } catch (error) {
-          this.logger.error(`Error processing message: ${error.message}`, error.stack);
-          // Nack and requeue
-          this.channel.nack(msg, false, true);
-        }
-      }, { noAck: false }); // Manual ack
-
+      // Consumer for shipment.failed
+      this.channel.consume(
+        shipmentFailedQueue,
+        async (msg) => {
+          if (!msg) return;
+          await this.handleMessage(msg, async (envelope) => {
+            const payload = envelope.payload;
+            const correlationId = envelope.correlation_id;
+            this.logger.log(
+              `Processing refund for order: ${payload.order_id} (Correlation: ${correlationId})`,
+            );
+            await this.paymentService.refundPayment(payload, correlationId);
+          });
+        },
+        { noAck: false },
+      );
     } catch (error) {
       this.logger.error('Failed to connect to RabbitMQ', error);
       setTimeout(() => this.connect(), 5000); // Retry after 5s
+    }
+  }
+
+  private async handleMessage(msg: any, handler: (payload: any) => Promise<void>) {
+    try {
+      const content = JSON.parse(msg.content.toString());
+      const eventId = content.event_id;
+
+      await this.idempotencyService.executeIdempotent(eventId, async (manager) => {
+        await handler(content);
+      });
+
+      this.channel.ack(msg);
+    } catch (error) {
+      this.logger.error(`Error processing message: ${error.message}`, error.stack);
+      this.channel.nack(msg, false, true);
     }
   }
 

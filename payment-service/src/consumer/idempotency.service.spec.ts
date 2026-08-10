@@ -27,10 +27,7 @@ describe('IdempotencyService', () => {
     };
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        IdempotencyService,
-        { provide: DataSource, useValue: dataSource },
-      ],
+      providers: [IdempotencyService, { provide: DataSource, useValue: dataSource }],
     }).compile();
 
     service = module.get<IdempotencyService>(IdempotencyService);
@@ -64,7 +61,9 @@ describe('IdempotencyService', () => {
     const action = jest.fn();
     manager.insert.mockRejectedValue(new Error('DB connection failed'));
 
-    await expect(service.executeIdempotent('event-3', action)).rejects.toThrow('DB connection failed');
+    await expect(service.executeIdempotent('event-3', action)).rejects.toThrow(
+      'DB connection failed',
+    );
 
     expect(manager.insert).toHaveBeenCalled();
     expect(action).not.toHaveBeenCalled();
