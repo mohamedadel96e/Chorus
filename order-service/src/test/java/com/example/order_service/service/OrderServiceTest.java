@@ -6,7 +6,6 @@ import com.example.order_service.dto.OrderItemRequest;
 import com.example.order_service.dto.OrderRequest;
 import com.example.order_service.outbox.OutboxEvent;
 import com.example.order_service.outbox.OutboxEventRepository;
-import tools.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -24,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class OrderServiceTest {
 
     static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:15-alpine");
-    
+
     static {
         postgres.start();
     }
@@ -53,12 +52,12 @@ class OrderServiceTest {
     void testCreateOrderSuccessfully() {
         OrderRequest req = new OrderRequest();
         req.setCustomerId("42");
-        
+
         OrderItemRequest item = new OrderItemRequest();
         item.setProductId("101");
         item.setQuantity(2);
         item.setUnitPriceCents(1500);
-        
+
         req.setItems(List.of(item));
 
         Order order = orderService.createOrder(req);
@@ -66,11 +65,12 @@ class OrderServiceTest {
         assertNotNull(order.getId());
         assertEquals("42", order.getCustomerId());
         assertEquals(3000, order.getTotalAmountCents());
-        
+
         List<OutboxEvent> events = outboxEventRepository.findAll();
-        // Clear all previous events if there were any, but there should only be 1 for this run
+        // Clear all previous events if there were any, but there should only be 1 for
+        // this run
         assertTrue(events.size() > 0);
-        
+
         // Grab the most recently added event
         OutboxEvent event = events.get(events.size() - 1);
         assertEquals("OrderCreated", event.getEventType());

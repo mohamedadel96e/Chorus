@@ -37,9 +37,23 @@ public class OrderItem {
         this.order = order;
     }
 
-    public UUID getId() { return id; }
-    public Order getOrder() { return order; }
-    public String getProductId() { return productId; }
-    public Integer getQuantity() { return quantity; }
-    public Integer getUnitPriceCents() { return unitPriceCents; }
+    public UUID getId() {
+        return id;
+    }
+
+    public Order getOrder() {
+        return order;
+    }
+
+    public String getProductId() {
+        return productId;
+    }
+
+    public Integer getQuantity() {
+        return quantity;
+    }
+
+    public Integer getUnitPriceCents() {
+        return unitPriceCents;
+    }
 }
