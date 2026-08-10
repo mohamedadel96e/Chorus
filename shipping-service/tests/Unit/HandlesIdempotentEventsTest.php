@@ -4,9 +4,7 @@ namespace Tests\Unit;
 
 use App\Models\ProcessedEvent;
 use App\Traits\HandlesIdempotentEvents;
-use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class HandlesIdempotentEventsTest extends TestCase
@@ -15,10 +13,12 @@ class HandlesIdempotentEventsTest extends TestCase
 
     public function test_executes_callback_when_event_is_new()
     {
-        $class = new class {
+        $class = new class
+        {
             use HandlesIdempotentEvents;
-            
-            public function process($eventId, $callback) {
+
+            public function process($eventId, $callback)
+            {
                 $this->handleIdempotentEvent($eventId, $callback);
             }
         };
@@ -30,7 +30,7 @@ class HandlesIdempotentEventsTest extends TestCase
 
         $this->assertTrue($executed);
         $this->assertDatabaseHas('processed_events', [
-            'event_id' => 'test-event-1'
+            'event_id' => 'test-event-1',
         ]);
     }
 
@@ -38,13 +38,15 @@ class HandlesIdempotentEventsTest extends TestCase
     {
         ProcessedEvent::insert([
             'event_id' => 'test-event-2',
-            'processed_at' => now()
+            'processed_at' => now(),
         ]);
 
-        $class = new class {
+        $class = new class
+        {
             use HandlesIdempotentEvents;
-            
-            public function process($eventId, $callback) {
+
+            public function process($eventId, $callback)
+            {
                 $this->handleIdempotentEvent($eventId, $callback);
             }
         };
