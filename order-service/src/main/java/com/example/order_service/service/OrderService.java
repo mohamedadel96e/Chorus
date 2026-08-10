@@ -68,9 +68,9 @@ public class OrderService {
       order.addItem(orderItem);
 
       OrderCreatedPayload.Item payloadItem = new OrderCreatedPayload.Item();
-      payloadItem.setProduct_id(itemReq.getProductId());
+      payloadItem.setProductId(itemReq.getProductId());
       payloadItem.setQuantity(itemReq.getQuantity());
-      payloadItem.setUnit_price_cents(itemReq.getUnitPriceCents());
+      payloadItem.setUnitPriceCents(itemReq.getUnitPriceCents());
       payloadItems.add(payloadItem);
     }
 
@@ -78,9 +78,9 @@ public class OrderService {
     orderRepository.save(order);
 
     OrderCreatedPayload payload = new OrderCreatedPayload();
-    payload.setOrder_id(orderId.toString());
-    payload.setCustomer_id(request.getCustomerId());
-    payload.setTotal_amount_cents(totalCents);
+    payload.setOrderId(orderId.toString());
+    payload.setCustomerId(request.getCustomerId());
+    payload.setTotalAmountCents(totalCents);
     payload.setCurrency("USD");
     payload.setItems(payloadItems);
 

@@ -1,25 +1,37 @@
 package com.example.order_service.dto;
 
 import java.util.List;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class OrderCreatedPayload {
-  private String order_id;
-  private String customer_id;
+  @JsonProperty("order_id")
+  private String orderId;
+
+  @JsonProperty("customer_id")
+  private String customerId;
+
   private List<Item> items;
-  private Integer total_amount_cents;
+
+  @JsonProperty("total_amount_cents")
+  private Integer totalAmountCents;
+
   private String currency;
 
   public static class Item {
-    private String product_id;
-    private Integer quantity;
-    private Integer unit_price_cents;
+    @JsonProperty("product_id")
+    private String productId;
 
-    public String getProduct_id() {
-      return product_id;
+    private Integer quantity;
+
+    @JsonProperty("unit_price_cents")
+    private Integer unitPriceCents;
+
+    public String getProductId() {
+      return productId;
     }
 
-    public void setProduct_id(String product_id) {
-      this.product_id = product_id;
+    public void setProductId(String productId) {
+      this.productId = productId;
     }
 
     public Integer getQuantity() {
@@ -30,29 +42,29 @@ public class OrderCreatedPayload {
       this.quantity = quantity;
     }
 
-    public Integer getUnit_price_cents() {
-      return unit_price_cents;
+    public Integer getUnitPriceCents() {
+      return unitPriceCents;
     }
 
-    public void setUnit_price_cents(Integer unit_price_cents) {
-      this.unit_price_cents = unit_price_cents;
+    public void setUnitPriceCents(Integer unitPriceCents) {
+      this.unitPriceCents = unitPriceCents;
     }
   }
 
-  public String getOrder_id() {
-    return order_id;
+  public String getOrderId() {
+    return orderId;
   }
 
-  public void setOrder_id(String order_id) {
-    this.order_id = order_id;
+  public void setOrderId(String orderId) {
+    this.orderId = orderId;
   }
 
-  public String getCustomer_id() {
-    return customer_id;
+  public String getCustomerId() {
+    return customerId;
   }
 
-  public void setCustomer_id(String customer_id) {
-    this.customer_id = customer_id;
+  public void setCustomerId(String customerId) {
+    this.customerId = customerId;
   }
 
   public List<Item> getItems() {
@@ -63,12 +75,12 @@ public class OrderCreatedPayload {
     this.items = items;
   }
 
-  public Integer getTotal_amount_cents() {
-    return total_amount_cents;
+  public Integer getTotalAmountCents() {
+    return totalAmountCents;
   }
 
-  public void setTotal_amount_cents(Integer total_amount_cents) {
-    this.total_amount_cents = total_amount_cents;
+  public void setTotalAmountCents(Integer totalAmountCents) {
+    this.totalAmountCents = totalAmountCents;
   }
 
   public String getCurrency() {

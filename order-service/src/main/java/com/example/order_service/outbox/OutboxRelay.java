@@ -21,16 +21,17 @@ public class OutboxRelay {
   private static final Logger log = LoggerFactory.getLogger(OutboxRelay.class);
   private final OutboxEventRepository repository;
   private final RabbitTemplate rabbitTemplate;
-  private final ObjectMapper objectMapper = new ObjectMapper();
+  private final ObjectMapper objectMapper;
 
   private static final String EXCHANGE_NAME = "chorus.events";
 
-  public OutboxRelay(OutboxEventRepository repository, RabbitTemplate rabbitTemplate) {
+  public OutboxRelay(OutboxEventRepository repository, RabbitTemplate rabbitTemplate, ObjectMapper objectMapper) {
     this.repository = repository;
     this.rabbitTemplate = rabbitTemplate;
+    this.objectMapper = objectMapper;
   }
 
-  @Scheduled(fixedDelayString = "${outbox.relay.delay:5000}")
+  @Scheduled(fixedDelayString = "${outbox.relay.delay:3000}")
   @Transactional
   public void relayEvents() {
     List<OutboxEvent> pendingEvents = repository.findByStatusOrderByOccurredAtAsc("PENDING");

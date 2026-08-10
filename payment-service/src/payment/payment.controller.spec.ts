@@ -1,10 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PaymentController } from './payment.controller';
 import { PaymentService } from './payment.service';
+import { NotImplementedException } from '@nestjs/common';
 
 describe('PaymentController', () => {
   let controller: PaymentController;
-  let service: PaymentService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -12,39 +12,27 @@ describe('PaymentController', () => {
       providers: [
         {
           provide: PaymentService,
-          useValue: {
-            charge: jest.fn().mockResolvedValue({
-              paymentId: 'payment-id-123',
-              status: 'SUCCESS',
-              message: 'Payment charged successfully',
-            }),
-          },
+          useValue: {},
         },
       ],
     }).compile();
 
     controller = module.get<PaymentController>(PaymentController);
-    service = module.get<PaymentService>(PaymentService);
   });
 
   it('should be defined', () => {
     expect(controller).toBeDefined();
   });
 
-  it('should call paymentService.charge', async () => {
+  it('should throw NotImplementedException on charge', async () => {
     const request = {
       orderId: 'order-123',
       amountCents: 1000,
       currency: 'USD',
     };
 
-    const response = await controller.charge(request);
-
-    expect(service.processCharge).toHaveBeenCalledWith(request);
-    expect(response).toEqual({
-      paymentId: 'payment-id-123',
-      status: 'SUCCESS',
-      message: 'Payment charged successfully',
-    });
+    await expect(controller.charge(request)).rejects.toThrow(
+      new NotImplementedException('Synchronous charging is not supported. Use RabbitMQ events (inventory.reserved) instead.'),
+    );
   });
 });

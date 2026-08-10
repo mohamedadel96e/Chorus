@@ -130,6 +130,24 @@ public class OrderEventConsumer {
         });
   }
 
+  @RabbitListener(bindings = @QueueBinding(value = @Queue(value = "order.payment.charged", durable = "true"), exchange = @Exchange(value = "chorus.events", type = "topic", durable = "true"), key = "payment.charged"), ackMode = "MANUAL")
+  public void onPaymentCharged(
+      byte[] messageBytes, Channel channel, @Header(AmqpHeaders.DELIVERY_TAG) long deliveryTag) {
+    processEvent(
+        messageBytes,
+        channel,
+        deliveryTag,
+        envelope -> {
+          JsonNode payload = envelope.get("payload");
+          UUID orderId = UUID.fromString(payload.get("order_id").asText());
+          log.info(
+              "Processing payment.charged for order: {} (Correlation: {})",
+              orderId,
+              envelope.get("correlation_id").asText());
+          orderService.updateOrderStatus(orderId, "CONFIRMED");
+        });
+  }
+
   private void processEvent(
       byte[] messageBytes, Channel channel, long deliveryTag, Consumer<JsonNode> logic) {
     String messageJson = new String(messageBytes, StandardCharsets.UTF_8);

@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
@@ -9,25 +10,30 @@ import { ProcessedEvent } from './outbox/processed-event.entity';
 import { PaymentModule } from './payment/payment.module';
 import { PaymentRecord } from './payment/payment-record.entity';
 import { ConsumerModule } from './consumer/consumer.module';
-import { TestModule } from './test/test.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forRoot({
-      type: 'postgres',
-      host: 'localhost',
-      port: 5432,
-      username: 'postgres',
-      password: 'password',
-      database: 'payment_db',
-      entities: [OutboxEvent, ProcessedEvent, PaymentRecord],
-      synchronize: true, // Use only in development
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
+    TypeOrmModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        type: 'postgres',
+        host: configService.get<string>('DB_HOST') || 'localhost',
+        port: configService.get<number>('DB_PORT') || 5432,
+        username: configService.get<string>('DB_USER') || 'postgres',
+        password: configService.get<string>('DB_PASSWORD') || 'password',
+        database: configService.get<string>('DB_NAME') || 'payment_db',
+        entities: [OutboxEvent, ProcessedEvent, PaymentRecord],
+        synchronize: true, // Use only in development
+      }),
     }),
     ScheduleModule.forRoot(),
     OutboxModule,
     PaymentModule,
     ConsumerModule,
-    TestModule,
   ],
   controllers: [AppController],
   providers: [AppService],

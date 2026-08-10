@@ -114,4 +114,17 @@ export class PaymentService {
       await queryRunner.release();
     }
   }
+
+  async findAll() {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const payments = await queryRunner.manager.find(PaymentRecord);
+      return payments;
+    } finally {
+      await queryRunner.release();
+    }
+  }
 }

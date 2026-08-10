@@ -1,4 +1,4 @@
-import { Controller, Post, Body, NotImplementedException } from '@nestjs/common';
+import { Controller, Post, Body, NotImplementedException, Get } from '@nestjs/common';
 import { PaymentService } from './payment.service';
 
 @Controller('api/payment')
@@ -10,5 +10,10 @@ export class PaymentController {
     throw new NotImplementedException(
       'Synchronous charging is not supported. Use RabbitMQ events (inventory.reserved) instead.',
     );
+  }
+
+  @Get()
+  async findAll() {
+    return await this.paymentService.findAll();
   }
 }

@@ -1,4 +1,5 @@
 import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import * as amqplib from 'amqplib';
 import { IdempotencyService } from './idempotency.service';
 import { PaymentService } from '../payment/payment.service';
@@ -12,6 +13,7 @@ export class RabbitMqConsumerService implements OnModuleInit, OnModuleDestroy {
   constructor(
     private readonly idempotencyService: IdempotencyService,
     private readonly paymentService: PaymentService,
+    private readonly configService: ConfigService,
   ) {}
 
   async onModuleInit() {
@@ -20,7 +22,8 @@ export class RabbitMqConsumerService implements OnModuleInit, OnModuleDestroy {
 
   async connect() {
     try {
-      this.connection = await amqplib.connect('amqp://guest:guest@localhost:5672');
+      const amqpUrl = this.configService.get<string>('RABBITMQ_URL') || 'amqp://guest:guest@localhost:5672';
+      this.connection = await amqplib.connect(amqpUrl);
       this.channel = await this.connection.createChannel();
 
       const exchange = 'chorus.events';

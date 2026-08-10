@@ -3,7 +3,7 @@ package com.example.inventory_service.model;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-
+import jakarta.persistence.Version;
 @Entity
 @Table(name = "products")
 public class Product {
@@ -11,7 +11,8 @@ public class Product {
 
   private int availableQuantity;
 
-  @jakarta.persistence.Version private Long version;
+  @Version
+  private Long version;
 
   public Product() {}
 

@@ -1,4 +1,5 @@
 import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -15,12 +16,14 @@ export class OutboxService implements OnModuleInit, OnModuleDestroy {
   constructor(
     @InjectRepository(OutboxEvent)
     private readonly outboxRepo: Repository<OutboxEvent>,
+    private readonly configService: ConfigService,
   ) {}
 
   async onModuleInit() {
     try {
-      // Connect to RabbitMQ (in a real app, URL should be in env config)
-      this.connection = await amqp.connect('amqp://guest:guest@localhost:5672');
+      // Connect to RabbitMQ
+      const amqpUrl = this.configService.get<string>('RABBITMQ_URL') || 'amqp://guest:guest@localhost:5672';
+      this.connection = await amqp.connect(amqpUrl);
       this.channel = await this.connection.createChannel();
 
       // Ensure the exchange exists
