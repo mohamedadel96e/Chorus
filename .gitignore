@@ -6,7 +6,6 @@ target/
 *.nar
 *.ear
 *.log
-*.sh
 hs_err_pid*
 .mvn/
 

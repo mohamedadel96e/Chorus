@@ -51,7 +51,7 @@ public class OrderService {
     int totalCents = 0;
     List<OrderCreatedPayload.Item> payloadItems = new ArrayList<>();
 
-    Order order = new Order(orderId, request.getCustomerId(), 0, "USD", "pending", Instant.now());
+    Order order = new Order(orderId, request.getCustomerId(), 0, "USD", "PENDING", Instant.now());
 
     for (OrderItemRequest itemReq : request.getItems()) {
       if (itemReq.getQuantity() == null || itemReq.getQuantity() <= 0) {
@@ -122,19 +122,19 @@ public class OrderService {
 
       switch (status) {
         case "CONFIRMED":
-          validTransition = "PENDING".equals(currentStatus) || "FAILED_PENDING_COMPENSATION".equals(currentStatus);
+          validTransition = "PENDING".equalsIgnoreCase(currentStatus) || "FAILED_PENDING_COMPENSATION".equalsIgnoreCase(currentStatus);
           break;
         case "SHIPMENT_FAILED":
-          validTransition = "PENDING".equals(currentStatus) || "CONFIRMED".equals(currentStatus);
+          validTransition = "PENDING".equalsIgnoreCase(currentStatus) || "CONFIRMED".equalsIgnoreCase(currentStatus);
           break;
         case "FAILED_PENDING_COMPENSATION":
-          validTransition = "PENDING".equals(currentStatus);
+          validTransition = "PENDING".equalsIgnoreCase(currentStatus);
           break;
         case "REFUNDED":
-          validTransition = "SHIPMENT_FAILED".equals(currentStatus) || "CONFIRMED".equals(currentStatus);
+          validTransition = "SHIPMENT_FAILED".equalsIgnoreCase(currentStatus) || "CONFIRMED".equalsIgnoreCase(currentStatus);
           break;
         case "COMPLETED":
-          validTransition = "CONFIRMED".equals(currentStatus) || "PENDING".equals(currentStatus);
+          validTransition = "CONFIRMED".equalsIgnoreCase(currentStatus) || "PENDING".equalsIgnoreCase(currentStatus);
           break;
         case "CANCELLED":
           validTransition = true; // Can be cancelled from any non-terminal state

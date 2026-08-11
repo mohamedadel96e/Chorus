@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository, DataSource, EntityManager, QueryRunner } from 'typeorm';
 import { PaymentRecord } from './payment-record.entity';
 import { OutboxEvent } from '../outbox/outbox-event.entity';
 import { randomUUID } from 'crypto';
@@ -15,17 +15,23 @@ export class PaymentService {
     private dataSource: DataSource,
   ) {}
 
-  async processCharge(payload: any, correlationId: string): Promise<void> {
+  async processCharge(payload: any, correlationId: string, providedManager?: EntityManager): Promise<void> {
     const orderId = payload.order_id;
     const amountCents = payload.total_amount_cents || 10000; // fallback if missing
     const currency = payload.currency || 'USD';
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
+    let manager: EntityManager | undefined = providedManager;
+    let queryRunner: QueryRunner | null = null;
+
+    if (!manager) {
+      queryRunner = this.dataSource.createQueryRunner();
+      await queryRunner.connect();
+      await queryRunner.startTransaction();
+      manager = queryRunner.manager;
+    }
 
     try {
-      const isFailure = Math.random() < 0.1; // 10% chance to fail
+      const isFailure = process.env.NODE_ENV !== 'production' && Math.random() < 0.1; // 10% chance to fail in dev
 
       const payment = new PaymentRecord();
       payment.orderId = orderId;
@@ -33,7 +39,7 @@ export class PaymentService {
       payment.currency = currency;
       payment.status = isFailure ? 'FAILED' : 'SUCCESS';
 
-      const savedPayment = await queryRunner.manager.save(payment);
+      const savedPayment = await manager.save(payment);
 
       const outboxEvent = new OutboxEvent();
       outboxEvent.eventType = isFailure ? 'PaymentFailed' : 'PaymentCharged';
@@ -52,40 +58,46 @@ export class PaymentService {
       outboxEvent.status = 'PENDING';
       outboxEvent.occurredAt = new Date();
 
-      await queryRunner.manager.save(outboxEvent);
+      await manager.save(outboxEvent);
 
-      await queryRunner.commitTransaction();
+      if (queryRunner) await queryRunner.commitTransaction();
       this.logger.log(`Payment processed for order ${orderId}: ${savedPayment.status}`);
     } catch (error) {
-      await queryRunner.rollbackTransaction();
+      if (queryRunner) await queryRunner.rollbackTransaction();
       this.logger.error(`Error processing charge for order ${orderId}`, error.stack);
       throw error;
     } finally {
-      await queryRunner.release();
+      if (queryRunner) await queryRunner.release();
     }
   }
 
-  async refundPayment(payload: any, correlationId: string): Promise<void> {
+  async refundPayment(payload: any, correlationId: string, providedManager?: EntityManager): Promise<void> {
     const orderId = payload.order_id;
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
+    let manager: EntityManager | undefined = providedManager;
+    let queryRunner: QueryRunner | null = null;
+
+    if (!manager) {
+      queryRunner = this.dataSource.createQueryRunner();
+      await queryRunner.connect();
+      await queryRunner.startTransaction();
+      manager = queryRunner.manager;
+    }
 
     try {
       // Find the successful payment
-      const payment = await queryRunner.manager.findOne(PaymentRecord, {
+      const payment = await manager.findOne(PaymentRecord, {
         where: { orderId, status: 'SUCCESS' },
       });
 
       if (!payment) {
         this.logger.warn(`No SUCCESS payment found for order ${orderId} to refund.`);
-        await queryRunner.rollbackTransaction();
+        if (queryRunner) await queryRunner.rollbackTransaction();
         return;
       }
 
       payment.status = 'REFUNDED';
-      await queryRunner.manager.save(payment);
+      await manager.save(payment);
 
       const outboxEvent = new OutboxEvent();
       outboxEvent.eventType = 'PaymentRefunded';
@@ -102,16 +114,16 @@ export class PaymentService {
       outboxEvent.status = 'PENDING';
       outboxEvent.occurredAt = new Date();
 
-      await queryRunner.manager.save(outboxEvent);
+      await manager.save(outboxEvent);
 
-      await queryRunner.commitTransaction();
+      if (queryRunner) await queryRunner.commitTransaction();
       this.logger.log(`Payment refunded for order ${orderId}`);
     } catch (error) {
-      await queryRunner.rollbackTransaction();
+      if (queryRunner) await queryRunner.rollbackTransaction();
       this.logger.error(`Error refunding payment for order ${orderId}`, error.stack);
       throw error;
     } finally {
-      await queryRunner.release();
+      if (queryRunner) await queryRunner.release();
     }
   }
 

@@ -17,8 +17,8 @@ class ShippingService
         DB::transaction(function () use ($orderId, $correlationId) {
             $trackingNumber = 'TRK-'.strtoupper(substr(md5($orderId), 0, 8));
 
-            // 15% chance to simulate a shipping failure (e.g., address validation failed)
-            $isFailure = rand(1, 100) <= 15;
+            // 15% chance to simulate a shipping failure (e.g., address validation failed) in dev
+            $isFailure = config('app.env') !== 'production' && rand(1, 100) <= 15;
 
             if ($isFailure) {
                 $shipment = Shipment::create([

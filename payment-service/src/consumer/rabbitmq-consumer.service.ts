@@ -66,13 +66,13 @@ export class RabbitMqConsumerService implements OnModuleInit, OnModuleDestroy {
         reservedQueue,
         async (msg) => {
           if (!msg) return;
-          await this.handleMessage(msg, async (envelope) => {
+          await this.handleMessage(msg, async (envelope, manager) => {
             const payload = envelope.payload;
             const correlationId = envelope.correlation_id;
             this.logger.log(
               `Processing charge for order: ${payload.order_id} (Correlation: ${correlationId})`,
             );
-            await this.paymentService.processCharge(payload, correlationId);
+            await this.paymentService.processCharge(payload, correlationId, manager);
           });
         },
         { noAck: false },
@@ -83,13 +83,13 @@ export class RabbitMqConsumerService implements OnModuleInit, OnModuleDestroy {
         shipmentFailedQueue,
         async (msg) => {
           if (!msg) return;
-          await this.handleMessage(msg, async (envelope) => {
+          await this.handleMessage(msg, async (envelope, manager) => {
             const payload = envelope.payload;
             const correlationId = envelope.correlation_id;
             this.logger.log(
               `Processing refund for order: ${payload.order_id} (Correlation: ${correlationId})`,
             );
-            await this.paymentService.refundPayment(payload, correlationId);
+            await this.paymentService.refundPayment(payload, correlationId, manager);
           });
         },
         { noAck: false },
@@ -100,14 +100,22 @@ export class RabbitMqConsumerService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  private async handleMessage(msg: any, handler: (payload: any) => Promise<void>) {
+  private async handleMessage(msg: any, handler: (payload: any, manager: any) => Promise<void>) {
     try {
       const content = JSON.parse(msg.content.toString());
       const eventId = content.event_id;
 
       await this.idempotencyService.executeIdempotent(eventId, async (manager) => {
-        await handler(content);
+        await handler(content, manager);
       });
+
+      // Fault injection for resilience testing
+      const isChaosTest = content.payload?.customer_id?.startsWith('cust-chaos') && !msg.fields.redelivered;
+      if (isChaosTest && process.env.NODE_ENV !== 'production') {
+        this.logger.error('[FAULT INJECTION] Simulating catastrophic worker crash prior to message acknowledgment.');
+        setTimeout(() => process.exit(1), 100);
+        return;
+      }
 
       this.retryCounts.delete(eventId);
       this.channel.ack(msg);

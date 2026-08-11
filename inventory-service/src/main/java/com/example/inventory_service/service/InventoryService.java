@@ -113,6 +113,16 @@ public class InventoryService {
         successPayload.put("order_id", orderId.toString());
         successPayload.put("reservation_id", reservationId.toString());
         successPayload.set("items", items); // copy original items
+        if (payload.has("customer_id")) {
+          successPayload.put("customer_id", payload.get("customer_id").asText());
+        }
+        if (payload.has("total_amount_cents")) {
+          successPayload.put(
+              "total_amount_cents", payload.get("total_amount_cents").asInt());
+        }
+        if (payload.  has("currency")) {
+            successPayload.put("currency", payload.get("currency").asText());
+        }
 
         OutboxEvent outboxEvent =
             new OutboxEvent(
