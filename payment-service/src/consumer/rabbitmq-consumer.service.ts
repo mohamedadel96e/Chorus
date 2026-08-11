@@ -9,6 +9,7 @@ export class RabbitMqConsumerService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(RabbitMqConsumerService.name);
   private connection: any;
   private channel: any;
+  private retryCounts = new Map<string, number>();
 
   constructor(
     private readonly idempotencyService: IdempotencyService,
@@ -37,10 +38,23 @@ export class RabbitMqConsumerService implements OnModuleInit, OnModuleDestroy {
 
       await this.channel.assertExchange(exchange, 'topic', { durable: true });
 
-      await this.channel.assertQueue(reservedQueue, { durable: true });
+      // Setup Dead-Letter Exchange and Queue
+      const dlx = 'chorus.dlx';
+      const dlq = 'chorus.dlq';
+      await this.channel.assertExchange(dlx, 'fanout', { durable: true });
+      await this.channel.assertQueue(dlq, { durable: true });
+      await this.channel.bindQueue(dlq, dlx, '');
+
+      await this.channel.assertQueue(reservedQueue, { 
+        durable: true,
+        arguments: { 'x-dead-letter-exchange': dlx }
+      });
       await this.channel.bindQueue(reservedQueue, exchange, reservedKey);
 
-      await this.channel.assertQueue(shipmentFailedQueue, { durable: true });
+      await this.channel.assertQueue(shipmentFailedQueue, { 
+        durable: true,
+        arguments: { 'x-dead-letter-exchange': dlx }
+      });
       await this.channel.bindQueue(shipmentFailedQueue, exchange, shipmentFailedKey);
 
       await this.channel.prefetch(1);
@@ -95,10 +109,36 @@ export class RabbitMqConsumerService implements OnModuleInit, OnModuleDestroy {
         await handler(content);
       });
 
+      this.retryCounts.delete(eventId);
       this.channel.ack(msg);
     } catch (error) {
-      this.logger.error(`Error processing message: ${error.message}`, error.stack);
-      this.channel.nack(msg, false, true);
+      const isRedelivered = msg.fields.redelivered;
+      this.logger.error(`Error processing message (Redelivered: ${isRedelivered}): ${error.message}`, error.stack);
+      
+      let requeue = true;
+      try {
+        const content = JSON.parse(msg.content.toString());
+        const eventId = content.event_id;
+        
+        if (eventId) {
+          const count = (this.retryCounts.get(eventId) || 0) + 1;
+          this.retryCounts.set(eventId, count);
+          if (count >= 3) {
+            requeue = false;
+            this.retryCounts.delete(eventId);
+            this.logger.warn(`Message failed 3 times, routing to DLQ for event: ${eventId}`);
+          }
+        } else {
+          requeue = !isRedelivered;
+        }
+      } catch (parseError) {
+        requeue = !isRedelivered;
+      }
+
+      if (!requeue) {
+        this.logger.warn('Message failed multiple times, routing to DLQ.');
+      }
+      this.channel.nack(msg, false, requeue);
     }
   }
 

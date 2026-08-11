@@ -30,7 +30,9 @@ class OrderControllerTest {
   @BeforeEach
   void setUp() {
     orderService = Mockito.mock(OrderService.class);
-    orderController = new OrderController(orderService);
+    com.example.order_service.domain.OrderRepository orderRepository = Mockito.mock(com.example.order_service.domain.OrderRepository.class);
+    com.example.order_service.domain.EventTraceRepository eventTraceRepository = Mockito.mock(com.example.order_service.domain.EventTraceRepository.class);
+    orderController = new OrderController(orderService, orderRepository, eventTraceRepository);
     mockMvc = MockMvcBuilders.standaloneSetup(orderController).build();
   }
 

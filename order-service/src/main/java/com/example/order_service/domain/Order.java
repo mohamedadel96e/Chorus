@@ -24,6 +24,9 @@ public class Order {
   @Column(name = "status", nullable = false)
   private String status;
 
+  @Column(name = "cancellation_reason")
+  private String cancellationReason;
+
   @Column(name = "created_at", nullable = false)
   private Instant createdAt;
 
@@ -86,5 +89,13 @@ public class Order {
 
   public List<OrderItem> getItems() {
     return items;
+  }
+
+  public String getCancellationReason() {
+    return cancellationReason;
+  }
+
+  public void setCancellationReason(String cancellationReason) {
+    this.cancellationReason = cancellationReason;
   }
 }
